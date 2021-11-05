@@ -9,7 +9,7 @@ import java.util.Set;
 public class Client {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.TABLE)
     private Long id;
 
     private String name;
@@ -35,10 +35,12 @@ public class Client {
 
     public Client() {}
 
-    public Client(String name, String surname, Integer age) {
+    public Client(String name, String surname, Integer age, String login, String password) {
         this.name = name;
         this.surname = surname;
         this.age = age;
+        this.login = login;
+        this.password = password;
     }
 
     public void addAccount(Account account) {
@@ -83,4 +85,5 @@ public class Client {
     public void setAccounts(Set<Account> accounts) {
         this.accounts = accounts;
     }
+
 }

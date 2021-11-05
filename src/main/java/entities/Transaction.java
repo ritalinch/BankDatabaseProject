@@ -9,7 +9,7 @@ import java.time.Instant;
 public class Transaction {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.TABLE)
     private Long id;
 
     @ManyToOne
@@ -30,4 +30,5 @@ public class Transaction {
         this.remained = remained;
         realisedAt = Instant.now();
     }
+
 }

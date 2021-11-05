@@ -10,9 +10,10 @@ import java.util.List;
 public class Account {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.TABLE)
     private Long id;
 
+    @Column(name="currency")
     @Enumerated(EnumType.ORDINAL)
     private Currency currency;
 
@@ -68,4 +69,5 @@ public class Account {
     public void setClient(Client client) {
         this.client = client;
     }
+
 }

@@ -1,5 +1,8 @@
+package services;
+
 import customExceptions.IllegalValueException;
 import customExceptions.SuchAccountAlreadyExistsException;
+import customExceptions.SuchEntityExistsException;
 import entities.Account;
 import entities.Client;
 import entities.Currency;
@@ -11,28 +14,42 @@ import java.util.Scanner;
 
 public class BankService {
 
-    private static final BankService bankService = new BankService();
     private static final String NAME = "JPATest";
+    private static final EntityManagerFactory EM_FACTORY = Persistence.createEntityManagerFactory(NAME);
+    private static final EntityManager EM = EM_FACTORY.createEntityManager();
+    private static final BankService BANK_SERVICE = new BankService();
+    private static final Scanner SCANNER = new Scanner(System.in);
 
     private Client currentClient = null;
-    private EntityManagerFactory emFactory;
-    private EntityManager em;
-    private Scanner scanner;
 
-    private BankService() {
-        bankService.emFactory = Persistence.createEntityManagerFactory(NAME);
-        bankService.em = bankService.emFactory.createEntityManager();
-        bankService.scanner = new Scanner(System.in);
+    public static void makeBankServiceStarted() {
+        try {
+            BANK_SERVICE.start();
+        } catch (SuchAccountAlreadyExistsException | IllegalValueException | SuchEntityExistsException e) {
+            System.out.println(e.getMessage());
+        }
     }
 
-    public static void main(String[] args) throws SuchAccountAlreadyExistsException, IllegalValueException {
+    private void start() throws SuchAccountAlreadyExistsException, IllegalValueException, SuchEntityExistsException {
 
-        bankService.tryToSignIn();
-        bankService.closeAll();
+        System.out.println("""
+                To sign in type '1'
+                To sign up type '2'
+                -------->
+                """);
+
+        switch (SCANNER.nextLine()) {
+            case "1" -> tryToSignIn();
+            case "2" -> register();
+            default -> start();
+        }
+
+        closeAll();
+
     }
 
     private void performTransaction(Runnable runnable) {
-        EntityTransaction transaction = em.getTransaction();
+        EntityTransaction transaction = EM.getTransaction();
         transaction.begin();
         try {
             runnable.run();
@@ -52,8 +69,11 @@ public class BankService {
         do {
 
             System.out.println("Enter login");
-            login = bankService.scanner.nextLine();
-            password = bankService.scanner.nextLine();
+            login = SCANNER.nextLine();
+
+            System.out.println("Enter password");
+            password = SCANNER.nextLine();
+            // TODO: fix noResult Exception
 
         } while (!logIn(login, password));
 
@@ -75,7 +95,7 @@ public class BankService {
                     7. To logout enter _____________________________________7__
                     """);
 
-                String ans = bankService.scanner.nextLine();
+                String ans = SCANNER.nextLine();
 
                 switch(ans) {
                     case "1" -> topUp();
@@ -92,15 +112,56 @@ public class BankService {
         }
     }
 
+    private void register() throws SuchEntityExistsException, SuchAccountAlreadyExistsException, IllegalValueException {
+
+        System.out.println("Enter your name:");
+        String name = SCANNER.nextLine();
+
+        System.out.println("Enter your surname:");
+        String surname = SCANNER.nextLine();
+
+        System.out.println("Enter your age");
+        Integer age = Integer.parseInt(SCANNER.nextLine());
+
+        System.out.println("Create login:");
+        String login = SCANNER.nextLine();
+
+        System.out.println("Create password:");
+        String password = SCANNER.nextLine();
+
+        TypedQuery<Long> query = EM.createQuery(
+                "SELECT COUNT(c) FROM Client c WHERE c.login = :login AND c.password = :password", Long.class);
+        query.setParameter("login", login);
+        query.setParameter("password", password);
+
+        if(query.getSingleResult() != 0L) {
+            throw new SuchEntityExistsException();
+        } else {
+            performTransaction(() -> EM.persist(new Client(
+                    name,
+                    surname,
+                    age,
+                    login,
+                    password
+            )));
+
+            System.out.println("A new client was created.");
+
+            tryToSignIn();
+        }
+
+    }
+
     private boolean logIn(String login, String password) {
-        TypedQuery<Client> query = bankService.em.createQuery(
+        TypedQuery<Client> query = EM.createQuery(
                 "SELECT c FROM Client c WHERE c.login = :login AND c.password = :password", Client.class);
         query.setParameter("login", login);
         query.setParameter("password", password);
 
         Optional<Client> logging = Optional.ofNullable(query.getSingleResult());
+
         if(logging.isPresent()) {
-            bankService.currentClient = logging.get();
+            currentClient = logging.get();
             return true;
         } else {
             return false;
@@ -110,11 +171,11 @@ public class BankService {
     private void createAccount() throws SuchAccountAlreadyExistsException {
         System.out.println();
         System.out.println("Enter chosen currency");
-        Currency currency = Currency.valueOf(bankService.scanner.nextLine());
+        Currency currency = Currency.valueOf(SCANNER.nextLine());
 
-        TypedQuery<Short> query = em.createQuery(
+        TypedQuery<Short> query = EM.createQuery(
                 "SELECT COUNT(a) FROM Account a WHERE a.client = :client AND a.currency = :currency", Short.class);
-        query.setParameter("client", bankService.currentClient);
+        query.setParameter("client", currentClient);
         query.setParameter("currency", currency);
 
         if(query.getSingleResult() != 0) {
@@ -122,16 +183,16 @@ public class BankService {
         }
 
         Account account = new Account(currency);
-        bankService.currentClient.addAccount(account);
-        performTransaction(() -> bankService.em.persist(account));
+        currentClient.addAccount(account);
+        performTransaction(() -> EM.persist(account));
     }
 
     private void getBalancesInChosenCurrency() {
         System.out.println();
         System.out.println("Enter chosen currency");
-        Currency currency = Currency.valueOf(bankService.scanner.nextLine());
+        Currency currency = Currency.valueOf(SCANNER.nextLine());
 
-        for (Account a : bankService.currentClient.getAccounts()) {
+        for (Account a : currentClient.getAccounts()) {
             System.out.println(a.getCurrency() + ": " +
                     a.getBalance().multiply(new BigDecimal("" + getRate(a.getCurrency(), currency))));
         }
@@ -140,20 +201,20 @@ public class BankService {
     private void getTotalBalanceInUAH() {
         BigDecimal res = new BigDecimal("0");
 
-        for (Account a : bankService.currentClient.getAccounts()) {
+        for (Account a : currentClient.getAccounts()) {
             res = res.add(a.getBalance().multiply(new BigDecimal("" + getRate(a.getCurrency(), Currency.UAH))));
         }
     }
 
     private Double getRate(Currency from, Currency to) {
-        TypedQuery<Long> query = em.createQuery(
-                "SELECT c.id FROM CurrencyRate c WHERE c.from = :from AND c.to = :to", Long.class);
+        TypedQuery<Long> query = EM.createQuery(
+                "SELECT c.id FROM CurrencyRate c WHERE c.currencyFrom = :from AND c.currencyTo = :to", Long.class);
         query.setParameter("from", from);
         query.setParameter("to", to);
 
         Long idObtained = query.getSingleResult();
 
-        TypedQuery<Double> query2 = em.createQuery(
+        TypedQuery<Double> query2 = EM.createQuery(
                 "SELECT c.rate FROM CurrencyRate c WHERE c.id = :id", Double.class);
         query2.setParameter("id", idObtained);
 
@@ -162,10 +223,10 @@ public class BankService {
 
     private synchronized void topUp() throws IllegalValueException {
         System.out.println("Choose currency for account:");
-        Account account = getAccountByCurrency(bankService.scanner.nextLine());
+        Account account = getAccountByCurrency(SCANNER.nextLine());
 
         System.out.println("Enter amount to transfer:");
-        BigDecimal amount = new BigDecimal(bankService.scanner.nextLine());
+        BigDecimal amount = new BigDecimal(SCANNER.nextLine());
 
         if(account == null || amount.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalValueException();
@@ -176,10 +237,10 @@ public class BankService {
 
     private synchronized void retain() throws IllegalValueException{
         System.out.println("Choose currency for account:");
-        Account account = getAccountByCurrency(bankService.scanner.nextLine());
+        Account account = getAccountByCurrency(SCANNER.nextLine());
 
         System.out.println("Enter amount to transfer:");
-        BigDecimal amount = new BigDecimal(bankService.scanner.nextLine());
+        BigDecimal amount = new BigDecimal(SCANNER.nextLine());
         if(account == null || amount.compareTo(BigDecimal.ZERO) >= 0) {
             throw new IllegalValueException();
         }
@@ -205,7 +266,7 @@ public class BankService {
     }
 
     private Account getAccountByCurrency(String currency) {
-        for(Account a : bankService.currentClient.getAccounts()) {
+        for(Account a : currentClient.getAccounts()) {
             if(a.getCurrency().toString().equals(currency)) {
                 return a;
             }
@@ -216,13 +277,13 @@ public class BankService {
     private synchronized void transfer() throws IllegalValueException{
         System.out.println();
         System.out.println("Choose currency for 'from' account:");
-        Account from = getAccountByCurrency(bankService.scanner.nextLine());
+        Account from = getAccountByCurrency(SCANNER.nextLine());
 
         System.out.println("Choose currency for 'to' account:");
-        Account to = getAccountByCurrency(bankService.scanner.nextLine());
+        Account to = getAccountByCurrency(SCANNER.nextLine());
 
         System.out.println("Enter amount to transfer:");
-        BigDecimal value = new BigDecimal(bankService.scanner.nextLine());
+        BigDecimal value = new BigDecimal(SCANNER.nextLine());
 
         if (from == null || to == null) {
             throw new IllegalValueException();
@@ -239,8 +300,11 @@ public class BankService {
     }
 
     private void closeAll() {
-        scanner.close();
-        if (em != null) em.close();
-        if (emFactory != null) emFactory.close();
+        SCANNER.close();
+        if (EM != null) EM.close();
+        if (EM_FACTORY != null) {
+            EM_FACTORY.close();
+        }
     }
+
 }

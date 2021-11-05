@@ -2,31 +2,32 @@ package entities;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.Currency;
 
 @Entity
 @Table(name = "rates")
 public class CurrencyRate {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.TABLE)
     private Long id;
 
+    @Column(name = "currency_from")
     @Enumerated(EnumType.ORDINAL)
-    private Currency from;
+    private Currency currencyFrom;
 
+    @Column(name = "currency_to")
     @Enumerated(EnumType.ORDINAL)
-    private Currency to;
+    private Currency currencyTo;
 
-    private Double rate;
+    private Float rate;
 
     private Instant updated;
 
     public CurrencyRate() { }
 
     public CurrencyRate(Currency from, Currency to) {
-        this.from = from;
-        this.to = to;
+        this.currencyFrom = from;
+        this.currencyTo = to;
         this.updated = Instant.now();
     }
 
@@ -34,15 +35,16 @@ public class CurrencyRate {
         return id;
     }
 
-    public Currency getFrom() {
-        return from;
+    public Currency getCurrencyFrom() {
+        return currencyFrom;
     }
 
-    public Currency getTo() {
-        return to;
+    public Currency getCurrencyTo() {
+        return currencyTo;
     }
 
     public Instant getUpdated() {
         return updated;
     }
+
 }
