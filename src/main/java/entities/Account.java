@@ -28,9 +28,10 @@ public class Account {
 
     public Account() {}
 
-    public Account(Currency currency) {
+    public Account(Currency currency, Client client) {
         this.currency = currency;
         this.balance = new BigDecimal("0");
+        this.client = client;
     }
 
     public void changeBalance(BigDecimal value) {

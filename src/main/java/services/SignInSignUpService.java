@@ -35,7 +35,6 @@ public class SignInSignUpService {
         if(query.getSingleResult() != 0L) {
 
             System.err.println(new SuchEntityExistsException().getMessage());
-            System.out.println("Try one more time");
             register(EM, SCANNER);
 
         } else {
@@ -56,18 +55,17 @@ public class SignInSignUpService {
     void tryToSignIn(EntityManager EM, Scanner SCANNER) {
         String login;
         String password;
-        do {
 
-            System.out.println("Enter login");
-            login = SCANNER.nextLine();
+        System.out.println("Enter login");
+        login = SCANNER.nextLine();
 
-            System.out.println("Enter password");
-            password = SCANNER.nextLine();
+        System.out.println("Enter password");
+        password = SCANNER.nextLine();
 
-        } while (!logIn(EM, login, password));
+        logIn(EM, login, password);
     }
 
-    private boolean logIn(EntityManager EM, String login, String password) {
+    private void logIn(EntityManager EM, String login, String password) {
         TypedQuery<Client> query = EM.createQuery(
                 "SELECT c FROM Client c WHERE c.login = :login AND c.password = :password", Client.class);
         query.setParameter("login", login);
@@ -75,13 +73,10 @@ public class SignInSignUpService {
 
         try {
             BankService.setCurrentClient(query.getSingleResult());
-            return true;
         } catch (NoResultException e) {
             System.err.println("No such user.");
             BankService.makeBankServiceStarted();
         }
-
-        return false;
     }
 
 }
