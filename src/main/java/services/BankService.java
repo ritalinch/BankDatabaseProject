@@ -10,82 +10,9 @@ import java.util.Scanner;
 
 public class BankService {
 
-    private static final String NAME = "JPATest";
-    private static final EntityManagerFactory EM_FACTORY = Persistence.createEntityManagerFactory(NAME);
-    private static final EntityManager EM = EM_FACTORY.createEntityManager();
-    private static final BankService BANK_SERVICE = new BankService();
-    private static final Scanner SCANNER = new Scanner(System.in);
+    private static Client currentClient = null;
 
-    private Client currentClient = null;
-    private final SignInSignUpService SIGN_IN_SIGN_UP_SERVICE = new SignInSignUpService();
-
-    public static void makeBankServiceStarted() {
-        BANK_SERVICE.start();
-    }
-
-    private void start() {
-
-        System.out.println("""
-                To sign in type '1'
-                To sign up type '2'
-                -------->
-                """);
-
-        switch (SCANNER.nextLine()) {
-            case "1" -> SIGN_IN_SIGN_UP_SERVICE.tryToSignIn(EM, SCANNER);
-            case "2" -> SIGN_IN_SIGN_UP_SERVICE.register(EM, SCANNER);
-            default -> start();
-        }
-
-        closeAll();
-
-    }
-
-    private void doActions() {
-        boolean logout = false;
-        while(!logout) {
-            System.out.println("""
-                    1. To top up enter _____________________________________1__
-                    2. To retain enter _____________________________________2__
-                    3. To see all balances in one currency enter ___________3__
-                    4. To see total balance in UAH enter ___________________4__
-                    5. To create a new account enter _______________________5__
-                    6. To transfer money from one account to another enter _6__
-                    7. To logout enter _____________________________________7__
-                    """);
-
-            String ans = SCANNER.nextLine();
-
-            switch(ans) {
-                case "1" -> topUp();
-                case "2" -> retain();
-                case "3" -> getBalancesInChosenCurrency();
-                case "4" -> getTotalBalanceInUAH();
-                case "5" -> createAccount();
-                case "6" -> transfer();
-                case "7" -> logout = true;
-            }
-        }
-    }
-
-    static void performTransaction(Runnable runnable) {
-
-        EntityTransaction transaction = EM.getTransaction();
-        transaction.begin();
-        try {
-            runnable.run();
-            transaction.commit();
-
-        } catch (Exception ex) {
-            if (transaction.isActive())
-                transaction.rollback();
-
-            throw new RuntimeException(ex);
-        }
-
-    }
-
-    private void createAccount() {
+    static void createAccount(Scanner SCANNER, EntityManager EM) {
         try {
 
             System.out.println("Enter chosen currency");
@@ -103,7 +30,7 @@ public class BankService {
             } else {
                 Account account = new Account(currency, currentClient);
                 currentClient.addAccount(account);
-                performTransaction(() -> EM.persist(account));
+                MainService.performTransaction(EM, () -> EM.persist(account));
                 System.out.println("Account was created.");
             }
 
@@ -111,52 +38,40 @@ public class BankService {
         } catch (IllegalArgumentException e) {
             System.err.println("No such currency exists.");
         } finally {
-            doActions();
+            MainService.doActions();
         }
     }
 
-    private void getBalancesInChosenCurrency() {
-
-        checkAccountList();
-
-        System.out.println("Enter chosen currency");
-        Currency currency = Currency.valueOf(SCANNER.nextLine());
-
-        for (Account a : currentClient.getAccounts()) {
-            System.out.println(a.getCurrency() + ": " +
-                    a.getBalance().multiply(new BigDecimal("" + getRate(a.getCurrency(), currency))));
-        }
-    }
-
-    private void getTotalBalanceInUAH() {
+    static void getTotalBalanceInUAH(EntityManager EM) {
 
         checkAccountList();
 
         BigDecimal res = new BigDecimal("0");
 
         for (Account a : currentClient.getAccounts()) {
-            res = res.add(a.getBalance().multiply(new BigDecimal("" + getRate(a.getCurrency(), Currency.UAH))));
+            if(a.getCurrency() == Currency.UAH) {
+                res = res.add(a.getBalance());
+            } else {
+                res = res.add(a.getBalance().multiply(new BigDecimal("" + getRate(EM, a.getCurrency()))));
+            }
         }
     }
 
-    private Double getRate(Currency from, Currency to) {
+    private static Float getRate(EntityManager EM, Currency currency) {
 
-        TypedQuery<Long> query = EM.createQuery(
-                "SELECT c.id FROM CurrencyRate c WHERE c.currencyFrom = :from AND c.currencyTo = :to", Long.class);
-        query.setParameter("from", from);
-        query.setParameter("to", to);
+        TypedQuery<Float> query = EM.createQuery(
+                "SELECT c.rate " +
+                        "FROM CurrencyRate c " +
+                        "WHERE c.updated = (SELECT MAX(updated) " +
+                        "FROM CurrencyRate " +
+                        "WHERE currency = :currency)", Float.class);
 
-        Long idObtained = query.getSingleResult();
+        query.setParameter("currency", currency);
 
-        TypedQuery<Double> query2 = EM.createQuery(
-                "SELECT c.rate FROM CurrencyRate c WHERE c.id = :id", Double.class);
-        query2.setParameter("id", idObtained);
-
-        return query2.getSingleResult();
-
+        return query.getSingleResult();
     }
 
-    private synchronized void topUp() {
+    static synchronized void topUp(Scanner SCANNER) {
 
         checkAccountList();
 
@@ -168,13 +83,13 @@ public class BankService {
 
         if(account == null || amount.compareTo(BigDecimal.ZERO) < 0) {
             System.err.println("Illegal value");
-            topUp();
+            topUp(SCANNER);
         }
 
         account.changeBalance(amount);
     }
 
-    private synchronized void retain() {
+    static synchronized void retain(Scanner SCANNER) {
 
         checkAccountList();
 
@@ -185,13 +100,13 @@ public class BankService {
         BigDecimal amount = new BigDecimal(SCANNER.nextLine());
         if(account == null || amount.compareTo(BigDecimal.ZERO) >= 0) {
             System.err.println("Illegal value");
-            retain();
+            retain(SCANNER);
         }
 
         account.changeBalance(amount);
     }
 
-    private synchronized void retain(Account account, BigDecimal value) {
+    private static synchronized void retain(Account account, BigDecimal value) {
         if(account == null || value.compareTo(BigDecimal.ZERO) >= 0) {
             System.err.println("Illegal value");
             retain(account, value);
@@ -201,7 +116,7 @@ public class BankService {
     }
 
 
-    private synchronized void topUp(Account account, BigDecimal value) {
+    private static synchronized void topUp(Account account, BigDecimal value) {
         if(account == null || value.compareTo(BigDecimal.ZERO) < 0) {
             System.err.println("Illegal value");
             topUp(account, value);
@@ -210,7 +125,7 @@ public class BankService {
         account.changeBalance(value);
     }
 
-    private Account getAccountByCurrency(String currency) {
+    private static Account getAccountByCurrency(String currency) {
         for(Account a : currentClient.getAccounts()) {
             if(a.getCurrency().toString().equals(currency)) {
                 return a;
@@ -219,7 +134,7 @@ public class BankService {
         return null;
     }
 
-    private synchronized void transfer() {
+    static synchronized void transfer(Scanner SCANNER) {
 
         checkAccountList();
 
@@ -234,12 +149,12 @@ public class BankService {
 
         if (from == null || to == null) {
             System.err.println("Illegal value");
-            doActions();
+            MainService.doActions();
         }
 
         if(value.compareTo(BigDecimal.ZERO) <= 0) {
             System.err.println("Illegal value");
-            doActions();
+            MainService.doActions();
         }
 
         retain(from, value);
@@ -249,22 +164,14 @@ public class BankService {
     }
 
     static synchronized void setCurrentClient(Client client) {
-        BANK_SERVICE.currentClient = client;
-        BANK_SERVICE.doActions();
+        currentClient = client;
+        MainService.doActions();
     }
 
-    private void checkAccountList() {
+    private static void checkAccountList() {
         if (currentClient.getAccounts().isEmpty()) {
             System.out.println("You have no accounts.");
-            doActions();
-        }
-    }
-
-    private synchronized void closeAll() {
-        SCANNER.close();
-        if (EM != null) EM.close();
-        if (EM_FACTORY != null) {
-            EM_FACTORY.close();
+            MainService.doActions();
         }
     }
 

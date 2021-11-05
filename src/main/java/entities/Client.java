@@ -46,7 +46,6 @@ public class Client {
     public void addAccount(Account account) {
         if(!accounts.contains(account)) {
             accounts.add(account);
-            // account.setClient(this);
         }
     }
 

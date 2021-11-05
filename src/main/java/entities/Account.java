@@ -24,7 +24,7 @@ public class Account {
     private Client client;
 
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
-    private List<Transaction> historyOfTransactions = new ArrayList<>();
+    private final List<Transaction> historyOfTransactions = new ArrayList<>();
 
     public Account() {}
 

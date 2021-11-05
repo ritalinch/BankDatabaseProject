@@ -10,7 +10,7 @@ import java.util.Scanner;
 
 public class SignInSignUpService {
 
-    void register(EntityManager EM, Scanner SCANNER) {
+    static void register(EntityManager EM, Scanner SCANNER) {
 
         System.out.println("Enter your name:");
         String name = SCANNER.nextLine();
@@ -38,7 +38,7 @@ public class SignInSignUpService {
             register(EM, SCANNER);
 
         } else {
-            BankService.performTransaction(() -> EM.persist(new Client(
+            MainService.performTransaction(EM, () -> EM.persist(new Client(
                     name,
                     surname,
                     age,
@@ -52,7 +52,7 @@ public class SignInSignUpService {
         }
     }
 
-    void tryToSignIn(EntityManager EM, Scanner SCANNER) {
+    static void tryToSignIn(EntityManager EM, Scanner SCANNER) {
         String login;
         String password;
 
@@ -65,7 +65,7 @@ public class SignInSignUpService {
         logIn(EM, login, password);
     }
 
-    private void logIn(EntityManager EM, String login, String password) {
+    private static void logIn(EntityManager EM, String login, String password) {
         TypedQuery<Client> query = EM.createQuery(
                 "SELECT c FROM Client c WHERE c.login = :login AND c.password = :password", Client.class);
         query.setParameter("login", login);
@@ -75,7 +75,7 @@ public class SignInSignUpService {
             BankService.setCurrentClient(query.getSingleResult());
         } catch (NoResultException e) {
             System.err.println("No such user.");
-            BankService.makeBankServiceStarted();
+            MainService.start();
         }
     }
 
