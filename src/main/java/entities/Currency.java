@@ -1,3 +1,3 @@
 package entities;
 
-public enum Currency { UAH, USD, EUR }
+public enum Currency {UAH, USD, EUR}

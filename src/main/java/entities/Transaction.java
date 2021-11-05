@@ -22,7 +22,8 @@ public class Transaction {
 
     private Instant realisedAt;
 
-    public Transaction() { }
+    public Transaction() {
+    }
 
     public Transaction(Account account, BigDecimal amount, BigDecimal remained) {
         this.account = account;

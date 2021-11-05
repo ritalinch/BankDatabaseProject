@@ -15,6 +15,8 @@ public class MainService {
 
     public static void start() {
 
+        RatesUpdateService.update();
+
         System.out.println("""
                 To sign in type '1'
                 To sign up type '2'
@@ -33,27 +35,35 @@ public class MainService {
 
     static void doActions() {
         boolean logout = false;
-        while(!logout) {
+        while (!logout) {
             System.out.println("""
                     1. To top up enter _____________________________________1__
                     2. To retain enter _____________________________________2__
-                    4. To see total balance in UAH enter ___________________3__
-                    5. To create a new account enter _______________________4__
-                    6. To transfer money from one account to another enter _5__
-                    7. To logout enter _____________________________________6__
+                    3. To see total balance in UAH enter ___________________3__
+                    4. To create a new account enter _______________________4__
+                    5. To transfer money from one account to another enter _5__
+                    6. To logout enter _____________________________________6__
                     """);
 
             String ans = SCANNER.nextLine();
 
-            switch(ans) {
-                case "1" -> BankService.topUp(SCANNER);
-                case "2" -> BankService.retain(SCANNER);
-                case "3" -> BankService.getTotalBalanceInUAH(EM);
-                case "4" -> BankService.createAccount(SCANNER, EM);
-                case "5" -> BankService.transfer(SCANNER);
+            switch (ans) {
+                case "1" -> BankService.topUp();
+                case "2" -> BankService.retain();
+                case "3" -> BankService.getTotalBalanceInUAH();
+                case "4" -> BankService.createAccount();
+                case "5" -> BankService.transfer();
                 case "6" -> logout = true;
             }
         }
+    }
+
+    static EntityManager em() {
+        return EM;
+    }
+
+    static Scanner scanner() {
+        return SCANNER;
     }
 
     static void performTransaction(EntityManager EM, Runnable runnable) {

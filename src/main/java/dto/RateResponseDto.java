@@ -1,10 +1,24 @@
 package dto;
 
-import java.time.Instant;
-
 public class RateResponseDto {
 
-    private Instant dataAsOf;
+    private String dateAsOf;
     private Conversions conversions;
+
+    public Conversions getConversions() {
+        return conversions;
+    }
+
+    public String getDateAsOf() {
+        return dateAsOf;
+    }
+
+    @Override
+    public String toString() {
+        return "RateResponseDto{" +
+                "dateAsOf='" + dateAsOf + '\'' +
+                ", conversions=" + conversions +
+                '}';
+    }
 
 }

@@ -21,19 +21,11 @@ public class Client {
     private String login;
 
     private String password;
-
-    public String getLogin() {
-        return login;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
     private Set<Account> accounts = new HashSet<>();
 
-    public Client() {}
+    public Client() {
+    }
 
     public Client(String name, String surname, Integer age, String login, String password) {
         this.name = name;
@@ -43,10 +35,16 @@ public class Client {
         this.password = password;
     }
 
+    public String getLogin() {
+        return login;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
     public void addAccount(Account account) {
-        if(!accounts.contains(account)) {
-            accounts.add(account);
-        }
+        accounts.add(account);
     }
 
     public Long getId() {

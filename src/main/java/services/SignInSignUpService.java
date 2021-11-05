@@ -32,7 +32,7 @@ public class SignInSignUpService {
         query.setParameter("login", login);
         query.setParameter("password", password);
 
-        if(query.getSingleResult() != 0L) {
+        if (query.getSingleResult() != 0L) {
 
             System.err.println(new SuchEntityExistsException().getMessage());
             register(EM, SCANNER);
