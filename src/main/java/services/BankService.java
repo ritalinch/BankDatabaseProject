@@ -9,7 +9,6 @@ import entities.Currency;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
-import java.util.Optional;
 import java.util.Scanner;
 
 public class BankService {
@@ -63,7 +62,7 @@ public class BankService {
         }
     }
 
-    private void tryToSignIn() throws SuchAccountAlreadyExistsException, IllegalValueException {
+    private void tryToSignIn() throws SuchAccountAlreadyExistsException, IllegalValueException, SuchEntityExistsException {
         String login;
         String password;
         do {
@@ -73,7 +72,6 @@ public class BankService {
 
             System.out.println("Enter password");
             password = SCANNER.nextLine();
-            // TODO: fix noResult Exception
 
         } while (!logIn(login, password));
 
@@ -152,20 +150,22 @@ public class BankService {
 
     }
 
-    private boolean logIn(String login, String password) {
+    private boolean logIn(String login, String password) throws SuchAccountAlreadyExistsException, SuchEntityExistsException, IllegalValueException {
         TypedQuery<Client> query = EM.createQuery(
                 "SELECT c FROM Client c WHERE c.login = :login AND c.password = :password", Client.class);
         query.setParameter("login", login);
         query.setParameter("password", password);
 
-        Optional<Client> logging = Optional.ofNullable(query.getSingleResult());
-
-        if(logging.isPresent()) {
-            currentClient = logging.get();
+        try {
+            currentClient = query.getSingleResult();
             return true;
-        } else {
-            return false;
+        } catch (NoResultException e) {
+            System.err.println("No such user.");
+            start();
         }
+
+        return false;
+
     }
 
     private void createAccount() throws SuchAccountAlreadyExistsException {
