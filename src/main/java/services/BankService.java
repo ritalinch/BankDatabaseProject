@@ -6,6 +6,7 @@ import entities.Currency;
 
 import javax.persistence.TypedQuery;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public class BankService {
 
@@ -32,37 +33,42 @@ public class BankService {
                 System.out.println("Account was created.");
             }
 
-
         } catch (IllegalArgumentException e) {
             System.err.println("No such currency exists.");
-        } finally {
-            MainService.doActions();
         }
     }
 
     static void getTotalBalanceInUAH() {
 
-        checkAccountList();
+        if (checkAccountList()) {
+            return;
+        }
 
-        BigDecimal res = new BigDecimal("0");
+        BigDecimal resInUah = new BigDecimal("0");
 
         for (Account a : currentClient.getAccounts()) {
             if (a.getCurrency() == Currency.UAH) {
-                res = res.add(a.getBalance());
+                resInUah = resInUah.add(a.getBalance());
             } else {
-                res = res.add(a.getBalance().multiply(new BigDecimal("" + getRate(a.getCurrency()))));
+                resInUah = resInUah.add(a.getBalance().divide(new BigDecimal("" + getRate(a.getCurrency())), RoundingMode.HALF_DOWN));
             }
         }
+
+        System.out.println("Total balance in UAH is " + resInUah + " UAH");
     }
 
-    private static Float getRate(Currency currency) {
+    private static Double getRate(Currency currency) {
 
-        TypedQuery<Float> query = MainService.em().createQuery(
+        if(currency == Currency.UAH) {
+            return 1.0;
+        }
+
+        TypedQuery<Double> query = MainService.em().createQuery(
                 "SELECT c.rate " +
                         "FROM CurrencyRate c " +
                         "WHERE c.id = (SELECT MAX(id) " +
                         "FROM CurrencyRate " +
-                        "WHERE currency = :currency)", Float.class);
+                        "WHERE currency = :currency)", Double.class);
 
         query.setParameter("currency", currency);
 
@@ -71,62 +77,36 @@ public class BankService {
 
     static synchronized void topUp() {
 
-        checkAccountList();
+        if (checkAccountList()) {
+            return;
+        }
 
         System.out.println("Choose currency for account:");
         Account account = getAccountByCurrency(MainService.scanner().nextLine());
 
-        System.out.println("Enter amount to transfer:");
-        BigDecimal amount = new BigDecimal(MainService.scanner().nextLine());
-
-        if (account == null || amount.compareTo(BigDecimal.ZERO) < 0) {
-            System.err.println("Illegal value");
-            topUp();
+        if (account == null) {
+            System.out.println("No account with this currency.");
+        } else {
+            System.out.println("Enter amount to transfer:");
+            BigDecimal amount = new BigDecimal(MainService.scanner().nextLine());
+            account.topUpBalance(amount);
         }
-
-        MainService.performTransaction(MainService.em(),
-                () -> MainService.em().persist(account.topUpBalance(amount)));
     }
 
     static synchronized void retain() {
-
-        checkAccountList();
-
+        if (checkAccountList()) {
+            return;
+        }
         System.out.println("Choose currency for account:");
         Account account = getAccountByCurrency(MainService.scanner().nextLine());
 
-        System.out.println("Enter amount to transfer:");
-        BigDecimal amount = new BigDecimal(MainService.scanner().nextLine());
-        if (account == null || amount.compareTo(BigDecimal.ZERO) >= 0) {
-            System.err.println("Illegal value");
-            retain();
+        if (account == null) {
+            System.err.println("No account with this currency");
+        } else {
+            System.out.println("Enter amount to transfer:");
+            BigDecimal amount = new BigDecimal(MainService.scanner().nextLine());
+            account.retainBalance(amount);
         }
-
-
-        MainService.performTransaction(MainService.em(),
-                () -> MainService.em().persist(account.retainBalance(amount)));
-    }
-
-    private static synchronized void retain(Account account, BigDecimal value) {
-        if (account == null || value.compareTo(BigDecimal.ZERO) >= 0) {
-            System.err.println("Illegal value");
-            retain(account, value);
-        }
-
-        MainService.performTransaction(MainService.em(),
-                () -> MainService.em().persist(account.retainBalance(value)));
-    }
-
-
-    private static synchronized void topUp(Account account, BigDecimal value) {
-        if (account == null || value.compareTo(BigDecimal.ZERO) < 0) {
-            System.err.println("Illegal value");
-            topUp(account, value);
-        }
-
-        MainService.performTransaction(MainService.em(),
-                () -> MainService.em().persist(account.topUpBalance(value)));
-
     }
 
     private static Account getAccountByCurrency(String currency) {
@@ -140,7 +120,9 @@ public class BankService {
 
     static synchronized void transfer() {
 
-        checkAccountList();
+        if (checkAccountList()) {
+            return;
+        }
 
         System.out.println("Choose currency for 'from' account:");
         Account from = getAccountByCurrency(MainService.scanner().nextLine());
@@ -148,35 +130,36 @@ public class BankService {
         System.out.println("Choose currency for 'to' account:");
         Account to = getAccountByCurrency(MainService.scanner().nextLine());
 
-        System.out.println("Enter amount to transfer:");
-        BigDecimal value = new BigDecimal(MainService.scanner().nextLine());
-
         if (from == null || to == null) {
-            System.err.println("Illegal value");
-            MainService.doActions();
+            System.err.println("Illegal currencies.");
+        } else {
+            System.out.println("Enter amount to transfer:");
+            BigDecimal value = new BigDecimal(MainService.scanner().nextLine());
+            if (value.compareTo(from.getBalance()) > 0
+                    || value.compareTo(BigDecimal.ZERO) < 0) {
+                System.err.println("Illegal argument to transfer.");
+            } else {
+                from.retainBalance(value);
+                to.topUpBalance(convertCurrency(value, from.getCurrency(), to.getCurrency()));
+                System.out.println("Transaction succeeded.");
+            }
         }
-
-        if (value.compareTo(BigDecimal.ZERO) <= 0) {
-            System.err.println("Illegal value");
-            MainService.doActions();
-        }
-
-        retain(from, value);
-        topUp(to, value);
-
-        System.out.println("Transaction succeeded.");
     }
 
-    static synchronized void setCurrentClient(Client client) {
+    private static BigDecimal convertCurrency(BigDecimal value, Currency from, Currency to) {
+        BigDecimal midResInUah = value.divide(new BigDecimal("" + getRate(from)));
+        return midResInUah.multiply(new BigDecimal("" + getRate(to)));
+    }
+
+    static void setCurrentClient(Client client) {
         currentClient = client;
-        MainService.doActions();
     }
 
-    private static void checkAccountList() {
-        if (currentClient.getAccounts().isEmpty()) {
+    private static boolean checkAccountList() {
+        boolean isEmpty = currentClient.getAccounts().isEmpty();
+        if (isEmpty) {
             System.err.println("You have no accounts.");
-            MainService.doActions();
         }
+        return isEmpty;
     }
-
 }

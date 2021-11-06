@@ -24,8 +24,8 @@ public class MainService {
                 """);
 
         switch (SCANNER.nextLine()) {
-            case "1" -> SignInSignUpService.tryToSignIn(EM, SCANNER);
-            case "2" -> SignInSignUpService.register(EM, SCANNER);
+            case "1" -> SignInSignUpService.tryToSignIn();
+            case "2" -> SignInSignUpService.register();
             default -> start();
         }
 
@@ -58,15 +58,15 @@ public class MainService {
         }
     }
 
-    static EntityManager em() {
+    public static EntityManager em() {
         return EM;
     }
 
-    static Scanner scanner() {
+    public static Scanner scanner() {
         return SCANNER;
     }
 
-    static void performTransaction(EntityManager EM, Runnable runnable) {
+    public static void performTransaction(EntityManager EM, Runnable runnable) {
 
         EntityTransaction transaction = EM.getTransaction();
         transaction.begin();

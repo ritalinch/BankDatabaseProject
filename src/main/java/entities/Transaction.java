@@ -2,7 +2,6 @@ package entities;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Entity
 @Table(name = "transactions")
@@ -20,8 +19,6 @@ public class Transaction {
 
     private BigDecimal remained;
 
-    private Instant realisedAt;
-
     public Transaction() {
     }
 
@@ -29,7 +26,6 @@ public class Transaction {
         this.account = account;
         this.amount = amount;
         this.remained = remained;
-        realisedAt = Instant.now();
     }
 
 }

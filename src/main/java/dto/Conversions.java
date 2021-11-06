@@ -4,9 +4,9 @@ import java.util.Map;
 
 public class Conversions {
 
-    private Map<String, Float> UAH;
+    private Map<String, Double> UAH;
 
-    public Map<String, Float> getUAH() {
+    public Map<String, Double> getUAH() {
         return UAH;
     }
 

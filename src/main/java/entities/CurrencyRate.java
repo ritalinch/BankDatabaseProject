@@ -14,12 +14,12 @@ public class CurrencyRate {
     @Enumerated(EnumType.ORDINAL)
     private Currency currency;
 
-    private Float rate;
+    private Double rate;
 
     public CurrencyRate() {
     }
 
-    public CurrencyRate(Currency currency, Float rate) {
+    public CurrencyRate(Currency currency, Double rate) {
         this.currency = currency;
         this.rate = rate;
     }
@@ -32,7 +32,7 @@ public class CurrencyRate {
         return currency;
     }
 
-    public Float getRate() {
+    public Double getRate() {
         return rate;
     }
 

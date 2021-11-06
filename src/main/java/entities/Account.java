@@ -1,5 +1,7 @@
 package entities;
 
+import services.MainService;
+
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -11,13 +13,17 @@ public class Account {
 
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
     private final List<Transaction> historyOfTransactions = new ArrayList<>();
+
     @Id
     @GeneratedValue(strategy = GenerationType.TABLE)
     private Long id;
+
     @Column(name = "currency")
     @Enumerated(EnumType.ORDINAL)
+
     private Currency currency;
     private BigDecimal balance = new BigDecimal("0.00");
+
     @ManyToOne
     @JoinColumn(name = "client_id")
     private Client client;
@@ -31,26 +37,32 @@ public class Account {
         this.client = client;
     }
 
-    public Transaction retainBalance(BigDecimal value) {
+    public void retainBalance(BigDecimal value) {
         if (balance.subtract(value).compareTo(BigDecimal.ZERO) < 0) {
             System.err.println("Not enough money.");
+        } else if (value.compareTo(BigDecimal.ZERO) < 0) {
+            System.err.println("Illegal value for transaction");
+        } else {
+            balance = balance.subtract(value);
+            addTransaction(BigDecimal.ZERO.subtract(value),
+                    "Balance was retained in " + getCurrency());
         }
-
-        balance = balance.subtract(value);
-        Transaction transaction = new Transaction(this, value, balance);
-        historyOfTransactions.add(transaction);
-        return transaction;
     }
 
-    public Transaction topUpBalance(BigDecimal value) {
+    public void topUpBalance(BigDecimal value) {
         if (value.compareTo(BigDecimal.ZERO) < 0) {
             System.err.println("Illegal value.");
+        } else {
+            balance = balance.add(value);
+            addTransaction(value, "Balance was topped up in " + getCurrency());
         }
+    }
 
-        balance = balance.add(value);
+    private void addTransaction(BigDecimal value, String message) {
         Transaction transaction = new Transaction(this, value, balance);
         historyOfTransactions.add(transaction);
-        return transaction;
+        MainService.performTransaction(MainService.em(), () -> MainService.em().persist(transaction));
+        System.out.println(message);
     }
 
     public Long getId() {
