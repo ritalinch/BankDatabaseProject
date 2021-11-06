@@ -42,7 +42,9 @@ public class MainService {
                     3. To see total balance in UAH enter ___________________3__
                     4. To create a new account enter _______________________4__
                     5. To transfer money from one account to another enter _5__
-                    6. To logout enter _____________________________________6__
+                    6. To search through transactions by amount_____________6__
+                    7. To search through transactions by date ______________7__
+                    8. To logout enter _____________________________________8__
                     """);
 
             String ans = SCANNER.nextLine();
@@ -53,7 +55,9 @@ public class MainService {
                 case "3" -> BankService.getTotalBalanceInUAH();
                 case "4" -> BankService.createAccount();
                 case "5" -> BankService.transfer();
-                case "6" -> logout = true;
+                case "6" -> SearchService.searchThroughTransactionsByValue();
+                case "7" -> SearchService.searchThroughTransactionsByDate();
+                case "8" -> logout = true;
             }
         }
     }

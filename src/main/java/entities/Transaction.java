@@ -2,6 +2,8 @@ package entities;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Date;
 
 @Entity
 @Table(name = "transactions")
@@ -15,9 +17,13 @@ public class Transaction {
     @JoinColumn(name = "account_id")
     private Account account;
 
+    private Currency currency;
+
     private BigDecimal amount;
 
     private BigDecimal remained;
+
+    private Date timestamp;
 
     public Transaction() {
     }
@@ -26,6 +32,8 @@ public class Transaction {
         this.account = account;
         this.amount = amount;
         this.remained = remained;
+        this.currency = account.getCurrency();
+        this.timestamp = Date.from(Instant.now());
     }
 
 }
