@@ -59,8 +59,8 @@ public class SearchService {
 
             res = criteriaQuery
                     .select(root)
-                    .where(criteriaBuilder.between(root.get("amount"), min, max));
-//                    .where(criteriaBuilder.equal(root.get("currency"), currency));
+                    .where(criteriaBuilder.between(root.get("amount"), min, max))
+                    .where(criteriaBuilder.equal(root.get("currency"), currency));
             TypedQuery<Transaction> typedQuery = MainService.em().createQuery(res);
             List<Transaction> list = typedQuery.getResultList();
 

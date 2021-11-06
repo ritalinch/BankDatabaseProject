@@ -41,10 +41,6 @@ public class Client {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", surname='" + surname + '\'' +
-                ", age=" + age +
-                ", login='" + login + '\'' +
-                ", password='" + password + '\'' +
-                ", accounts=" + accounts +
                 '}';
     }
 

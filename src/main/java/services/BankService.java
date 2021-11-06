@@ -59,7 +59,7 @@ public class BankService {
 
     private static Double getRate(Currency currency) {
 
-        if(currency == Currency.UAH) {
+        if (currency == Currency.UAH) {
             return 1.0;
         }
 

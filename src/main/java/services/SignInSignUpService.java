@@ -31,10 +31,10 @@ public class SignInSignUpService {
 
         if (query.getSingleResult() != 0L) {
             System.err.println("""
-                Entity with this data already exists.
-                You are not able to create more.
-                Try one more time.
-                """);
+                    Entity with this data already exists.
+                    You are not able to create more.
+                    Try one more time.
+                    """);
             register();
 
         } else {

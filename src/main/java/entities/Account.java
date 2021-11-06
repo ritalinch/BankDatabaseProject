@@ -68,7 +68,6 @@ public class Account {
     @Override
     public String toString() {
         return "Account{" +
-                "historyOfTransactions=" + historyOfTransactions +
                 ", id=" + id +
                 ", currency=" + currency +
                 ", balance=" + balance +
