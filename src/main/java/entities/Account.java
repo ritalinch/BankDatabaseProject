@@ -65,6 +65,17 @@ public class Account {
         System.out.println(message);
     }
 
+    @Override
+    public String toString() {
+        return "Account{" +
+                "historyOfTransactions=" + historyOfTransactions +
+                ", id=" + id +
+                ", currency=" + currency +
+                ", balance=" + balance +
+                ", client=" + client +
+                '}';
+    }
+
     public Long getId() {
         return id;
     }

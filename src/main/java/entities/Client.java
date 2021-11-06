@@ -35,6 +35,19 @@ public class Client {
         this.password = password;
     }
 
+    @Override
+    public String toString() {
+        return "Client{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", surname='" + surname + '\'' +
+                ", age=" + age +
+                ", login='" + login + '\'' +
+                ", password='" + password + '\'' +
+                ", accounts=" + accounts +
+                '}';
+    }
+
     public String getLogin() {
         return login;
     }

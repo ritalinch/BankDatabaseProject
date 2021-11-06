@@ -36,4 +36,15 @@ public class Transaction {
         this.timestamp = Date.from(Instant.now());
     }
 
+    @Override
+    public String toString() {
+        return "Transaction{" +
+                "id=" + id +
+                ", account=" + account +
+                ", currency=" + currency +
+                ", amount=" + amount +
+                ", remained=" + remained +
+                ", timestamp=" + timestamp +
+                '}';
+    }
 }
