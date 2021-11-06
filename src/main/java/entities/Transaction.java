@@ -1,12 +1,14 @@
 package entities;
 
 import javax.persistence.*;
+import javax.xml.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Date;
 
 @Entity
 @Table(name = "transactions")
+@XmlRootElement(name = "transaction")
 public class Transaction {
 
     @Id
@@ -36,6 +38,36 @@ public class Transaction {
         this.timestamp = Date.from(Instant.now());
     }
 
+    @XmlAttribute
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    @XmlTransient
+    public void setAccount(Account account) {
+        this.account = account;
+    }
+
+    @XmlElement
+    public void setCurrency(Currency currency) {
+        this.currency = currency;
+    }
+
+    @XmlElement
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    @XmlElement
+    public void setRemained(BigDecimal remained) {
+        this.remained = remained;
+    }
+
+    @XmlElement
+    public void setTimestamp(Date timestamp) {
+        this.timestamp = timestamp;
+    }
+
     @Override
     public String toString() {
         return "Transaction{" +
@@ -47,4 +79,25 @@ public class Transaction {
                 ", timestamp=" + timestamp +
                 '}';
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Currency getCurrency() {
+        return currency;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public BigDecimal getRemained() {
+        return remained;
+    }
+
+    public Date getTimestamp() {
+        return timestamp;
+    }
+
 }

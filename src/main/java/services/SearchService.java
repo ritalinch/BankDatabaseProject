@@ -2,6 +2,7 @@ package services;
 
 import entities.Currency;
 import entities.Transaction;
+import helpingclasses.Transactions;
 
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -40,6 +41,8 @@ public class SearchService {
 
             list.forEach(System.out::println);
 
+            save(list);
+
         } catch (ParseException e) {
             System.err.println("Illegal argument");
         }
@@ -66,8 +69,22 @@ public class SearchService {
 
             list.forEach(System.out::println);
 
+            save(list);
+
         } catch (IllegalArgumentException | NullPointerException e) {
             e.printStackTrace();
+        }
+    }
+
+    private static void save(List<Transaction> elements) {
+        System.out.println();
+        System.out.println("Do you want to save the result to xml file? [yes]: ");
+        if (MainService.scanner().nextLine().equals("yes")) {
+            System.out.println("Enter name of file.");
+            String fileName = MainService.scanner().nextLine();
+            Transactions transactions = new Transactions();
+            transactions.setTransactions(elements);
+            XmlSavingService.saveToXml(transactions, fileName);
         }
     }
 }
